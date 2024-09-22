@@ -1,17 +1,10 @@
 const express = require("express");
-const {
-  criarUsuario,
-  listarUsuarios,
-  atualizarUsuario,
-  deletarUsuario,
-} = require("../controllers/usuarioController");
-
+const usuarioController = require("../controllers/usuarioController");
 const router = express.Router();
 
-// Rotas de usuário protegidas pelo middleware de autenticação
-router.post("/", criarUsuario); // Criar novo usuário
-router.get("/", listarUsuarios); // Listar todos os usuários
-router.put("/:id", atualizarUsuario); // Atualizar um usuário
-router.delete("/:id", deletarUsuario); // Deletar um usuário
+router.get("/", usuarioController.listarUsuarios);
+router.get("/:id", usuarioController.obterUsuario);
+router.put("/:id", usuarioController.atualizarUsuario);
+router.delete("/:id", usuarioController.excluirUsuario);
 
 module.exports = router;

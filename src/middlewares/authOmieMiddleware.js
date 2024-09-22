@@ -1,26 +1,24 @@
-const BaseOmie = require('../models/baseOmie');
+const BaseOmie = require("../models/BaseOmie");
 
-// Middleware para verificar o nome da empresa Omie no header
+// Middleware para verificar o ID da baseOmie Omie no header
 const authOmieMiddleware = async (req, res, next) => {
   try {
-    const empresaNome = req.headers['x-omie-empresa'];  // Nome da empresa enviado no header
+    const baseOmieId = req.query["base_omie"]; // ID da baseOmie enviado na query
 
-    if (!empresaNome) {
-      return res.status(400).json({ message: 'Nome da empresa não fornecido no header' });
-    }
+    if (!baseOmieId)
+      return res.status(400).json({ message: "ID da baseOmie não fornecido na query" });
 
-    // Busca a base Omie pelo nome da empresa
-    const baseOmie = await BaseOmie.findOne({ nome: empresaNome });
+    // Busca a base Omie pelo ID da baseOmie
+    const baseOmie = await BaseOmie.findById(baseOmieId);
 
-    if (!baseOmie) {
-      return res.status(404).json({ message: 'Base Omie não encontrada para a empresa fornecida' });
-    }
+    if (!baseOmie)
+      return res.status(404).json({ message: "Base Omie não encontrada para o ID fornecido" });
 
     // Adiciona a base Omie encontrada ao objeto req para uso posterior
     req.baseOmie = baseOmie;
     next();
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao verificar o acesso da empresa', error });
+    res.status(500).json({ message: "Erro ao verificar o acesso da baseOmie", error });
   }
 };
 

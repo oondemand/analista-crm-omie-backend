@@ -1,25 +1,35 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+// backend/models/Usuario.js
 
-const usuarioSchema = new mongoose.Schema({
-  login: { type: String, required: true, unique: true },
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const UsuarioSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   senha: { type: String, required: true },
-  status: { type: String, enum: ['ativo', 'inativo'], default: 'ativo' },
-}, { timestamps: true });
+  status: { type: String, enum: ["ativo", "inativo"], default: "ativo" },
+  permissoes: { type: [String], default: [] },
+  status: {
+    type: String,
+    enum: ["ativo", "inativo", "arquivado"],
+    default: "ativo",
+  },
+});
 
-// Antes de salvar, faz o hash da senha
-usuarioSchema.pre('save', async function (next) {
-  if (!this.isModified('senha')) {
-    return next();
-  }
+UsuarioSchema.pre("save", async function (next) {
+  if (!this.isModified("senha")) return next();
   const salt = await bcrypt.genSalt(10);
   this.senha = await bcrypt.hash(this.senha, salt);
   next();
 });
 
-// Verifica se a senha está correta
-usuarioSchema.methods.compararSenha = async function (senhaDigitada) {
-  return await bcrypt.compare(senhaDigitada, this.senha);
+UsuarioSchema.methods.gerarToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET);
 };
 
-module.exports = mongoose.model('Usuario', usuarioSchema);
+UsuarioSchema.methods.compararSenha = async function (senha) {
+  return await bcrypt.compare(senha, this.senha);
+};
+
+module.exports = mongoose.model("Usuario", UsuarioSchema);

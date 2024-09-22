@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s  # Tempo para coletar as métricas
+
+scrape_configs:
+  - job_name: 'crm-omie-backend'
+    static_configs:
+      - targets: ['host.docker.internal:4000']  # Assumindo que o backend esteja rodando na porta 4000 dentro de um container

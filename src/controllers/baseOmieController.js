@@ -1,4 +1,4 @@
-const BaseOmie = require('../models/baseOmie');
+const BaseOmie = require('../models/BaseOmie');
 
 // Criar uma nova base Omie
 exports.criarBaseOmie = async (req, res) => {

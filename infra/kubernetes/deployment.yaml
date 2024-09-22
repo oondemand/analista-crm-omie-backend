@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analista-crm-omie-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analista-crm-omie-backend
+  template:
+    metadata:
+      labels:
+        app: analista-crm-omie-backend
+    spec:
+      containers:
+        - name: analista-crm-omie-backend-container
+          image: registry.digitalocean.com/oondemand/analista-crm-omie-backend:0.0.7
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "0.1"
+            limits:
+              memory: "2048Mi"
+              cpu: "2"

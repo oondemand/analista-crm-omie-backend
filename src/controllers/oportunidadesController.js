@@ -1,29 +1,28 @@
-const oportunidadesQueue = require('../queues/oportunidadesQueue');
-const redis = require('redis');
-const client = redis.createClient({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
+const oportunidadesQueue = require("../queues/oportunidadesQueue");
 
 exports.listarOportunidades = async (req, res) => {
-  const { baseOmie } = req;
-  const cacheKey = `oportunidades_cache_${baseOmie._id}`;
+  console.log("Iniciando listagem de oportunidades");
 
-  // Verifica se há cache disponível
-  client.get(cacheKey, (err, data) => {
-    if (err) throw err;
+  const { baseOmie } = req; // Supondo que baseOmie vem do middleware
+  const { pagina = 1, registros_por_pagina = 50, atualizar_cache: atualizarCache = false } = req.query; // Extraindo parâmetros da query
 
-    if (data) {
-      // Retorna a resposta do cache se estiver disponível
-      return res.status(200).json(JSON.parse(data));
-    } else {
-      // Adiciona o trabalho na fila
-      const params = [{ pagina: 1, registros_por_pagina: 50 }];
+  try {
+    // Adiciona o job na fila de oportunidades
+    const params = [{ pagina, registros_por_pagina }];
+    console.log(
+      `Adicionando job na fila: página ${pagina}, registros por página ${registros_por_pagina}, atualizar cache ${atualizarCache}`
+    );
 
-      oportunidadesQueue.add({ baseOmie, params });
+    const job = await oportunidadesQueue.add({ baseOmie, atualizarCache, params });
 
-      // Retorna uma resposta inicial enquanto o job está na fila
-      res.status(202).json({ message: 'A solicitação está sendo processada.' });
-    }
-  });
+    // Aguardar a conclusão do job
+    console.log("Aguardando a conclusão do job...");
+    const result = await job.finished();
+
+    console.log("Job finalizado com sucesso. Enviando resposta.");
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Erro ao listar oportunidades:", err.message);
+    res.status(500).json({ error: "Erro ao listar oportunidades" });
+  }
 };

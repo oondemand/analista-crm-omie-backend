@@ -1,69 +1,66 @@
-const Usuario = require('../models/Usuario');
+const Usuario = require("../models/Usuario");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
-// Criar um novo usuário
-exports.criarUsuario = async (req, res) => {
+exports.registrarUsuario = async (req, res) => {
+  const { nome, email, senha, status, permissoes } = req.body;
   try {
-    const { login, senha, status } = req.body;
-    
-    // Verifica se o login já existe
-    const usuarioExistente = await Usuario.findOne({ login });
-    if (usuarioExistente) {
-      return res.status(400).json({ message: 'Usuário já existe.' });
+    // Verifica se há algum usuário ativo no banco de dados
+    const usuarioAtivo = await Usuario.findOne({ status: "ativo" });
+
+    if (usuarioAtivo) {
+      return res.status(400).json({ error: "Já existe um usuário ativo no sistema" });
     }
 
-    const novoUsuario = new Usuario({ login, senha, status });
+    // Cria um novo usuário se não houver nenhum usuário ativo
+    const novoUsuario = new Usuario({ nome, email, senha, status, permissoes });
     await novoUsuario.save();
-    res.status(201).json({ message: 'Usuário criado com sucesso', usuario: novoUsuario });
+    res.status(201).json(novoUsuario);
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao criar usuário', error });
+    res.status(400).json({ error: "Erro ao registrar usuário" });
   }
 };
 
-// Listar todos os usuários
 exports.listarUsuarios = async (req, res) => {
   try {
     const usuarios = await Usuario.find();
-    res.status(200).json(usuarios);
+    res.json(usuarios);
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao listar usuários', error });
+    res.status(400).json({ error: "Erro ao listar usuários" });
   }
 };
 
-// Atualizar um usuário por ID
+exports.obterUsuario = async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado" });
+    res.json(usuario);
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao obter usuário" });
+  }
+};
+
 exports.atualizarUsuario = async (req, res) => {
+  const { nome, email, status, permissoes } = req.body;
   try {
-    const { id } = req.params;
-    const { login, senha, status } = req.body;
-
-    const usuario = await Usuario.findById(id);
-    if (!usuario) {
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-    }
-
-    // Atualiza os campos
-    if (login) usuario.login = login;
-    if (status) usuario.status = status;
-    if (senha) usuario.senha = senha; // O hook 'pre' salvará a senha criptografada
-
-    await usuario.save();
-    res.status(200).json({ message: 'Usuário atualizado com sucesso', usuario });
+    const usuario = await Usuario.findByIdAndUpdate(
+      req.params.id,
+      { nome, email, status, permissoes },
+      { new: true }
+    );
+    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado" });
+    res.json(usuario);
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao atualizar usuário', error });
+    res.status(400).json({ error: "Erro ao atualizar usuário" });
   }
 };
 
-// Deletar um usuário por ID
-exports.deletarUsuario = async (req, res) => {
+exports.excluirUsuario = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const usuario = await Usuario.findByIdAndDelete(id);
-    if (!usuario) {
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-    }
-
-    res.status(200).json({ message: 'Usuário deletado com sucesso' });
+    const usuario = await Usuario.findByIdAndDelete(req.params.id);
+    if (!usuario) return res.status(404).json({ error: "Usuário não encontrado" });
+    res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao deletar usuário', error });
+    res.status(400).json({ error: "Erro ao excluir usuário" });
   }
 };

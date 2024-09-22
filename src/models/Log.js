@@ -1,13 +1,16 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const logSchema = new mongoose.Schema({
-  metodo: { type: String, required: true },
-  url: { type: String, required: true },
-  ip: { type: String, required: true },
-  dadosRequisicao: { type: Object, required: true },
-  dadosResposta: { type: Object },
-  statusResposta: { type: Number },
-  usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },  // Opcional, se houver autenticação
-}, { timestamps: true });
+  metodo: String,
+  url: String,
+  ip: String,
+  dadosRequisicao: mongoose.Schema.Types.Mixed,
+  usuarioId: mongoose.Schema.Types.ObjectId,
+  statusResposta: Number,
+  dadosResposta: mongoose.Schema.Types.Mixed,
+  createdAt: { type: Date, default: Date.now, expires: "30d" }, // Expira após 30 dias
+});
 
-module.exports = mongoose.model('Log', logSchema);
+const Log = mongoose.model("Log", logSchema);
+
+module.exports = Log;

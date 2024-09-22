@@ -1,0 +1,532 @@
+openapi: 3.1.0
+info:
+  title: Analista CRM Omie API
+  version: 0.0.7
+  description: API para integração com Omie
+  contact:
+    name: Fabio
+
+servers:
+  - url: https://api.oondemand.com.br/analista-crm-omie
+    description: Servidor de Produção
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Usuario:
+      type: object
+      properties:
+        nome:
+          type: string
+          description: Nome do usuário
+        email:
+          type: string
+          description: Email do usuário
+          uniqueItems: true
+        senha:
+          type: string
+          description: Senha do usuário
+        status:
+          type: string
+          enum: ['ativo', 'inativo', 'arquivado']
+          description: Status do usuário
+          default: 'ativo'
+        permissoes:
+          type: array
+          items:
+            type: string
+          description: Permissões do usuário
+          default: []
+      required:
+        - nome
+        - email
+        - senha
+
+    BaseOmie:
+      type: object
+      properties:
+        nome:
+          type: string
+          description: Nome da base Omie
+        cnpj:
+          type: string
+          description: CNPJ da base Omie
+        appKey:
+          type: string
+          description: App Key da base Omie
+        appSecret:
+          type: string
+          description: App Secret da base Omie
+      required:
+        - nome
+        - cnpj
+        - appKey
+        - appSecret
+
+    LicaoAprendida:
+      type: object
+      properties:
+        categoria:
+          type: string
+        titulo:
+          type: string
+        conteudo:
+          type: string
+        resumo:
+          type: string
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+      required:
+        - categoria
+        - titulo
+        - conteudo
+        - resumo
+
+    Log:
+      type: object
+      properties:
+        metodo:
+          type: string
+        url:
+          type: string
+        ip:
+          type: string
+        dadosRequisicao:
+          type: object
+        usuarioId:
+          type: string
+        statusResposta:
+          type: integer
+        dadosResposta:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    OportunidadesResponse:
+      type: object
+      properties:
+        oportunidades:
+          type: array
+          items:
+            type: object
+
+paths:
+  /:
+    get:
+      summary: Verificar o status do serviço e a conexão com o MongoDB
+      operationId: getStatus
+      responses:
+        '200':
+          description: Status do serviço
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  database:
+                    type: string
+
+  /auth/login:
+    post:
+      summary: Autenticar usuário
+      operationId: autenticarUsuario
+      requestBody:
+        description: Dados de autenticação do usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                senha:
+                  type: string
+              required:
+                - email
+                - senha
+      responses:
+        '200':
+          description: Autenticado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Usuário inativo ou não encontrado
+
+  /base-omies:
+    post:
+      summary: Criar uma nova base Omie
+      operationId: criarBaseOmie
+      requestBody:
+        description: Dados da nova base Omie
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaseOmie'
+      responses:
+        '201':
+          description: Base Omie criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseOmie'
+        '500':
+          description: Erro ao criar a base Omie
+
+    get:
+      summary: Listar todas as bases Omie
+      operationId: listarBasesOmie
+      responses:
+        '200':
+          description: Lista de bases Omie
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BaseOmie'
+        '500':
+          description: Erro ao listar as bases Omie
+
+  /base-omies/{id}:
+    put:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Atualizar uma base Omie por ID
+      operationId: atualizarBaseOmie
+      requestBody:
+        description: Dados atualizados da base Omie
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaseOmie'
+      responses:
+        '200':
+          description: Base Omie atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseOmie'
+        '404':
+          description: Base Omie não encontrada
+        '500':
+          description: Erro ao atualizar a base Omie
+    delete:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Deletar uma base Omie por ID
+      operationId: deletarBaseOmie
+      responses:
+        '200':
+          description: Base Omie deletada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Base Omie não encontrada
+        '500':
+          description: Erro ao deletar a base Omie
+
+  /licoes-aprendidas:
+    post:
+      summary: Criar uma nova lição aprendida
+      operationId: criarLicao
+      requestBody:
+        description: Dados da nova lição aprendida
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicaoAprendida'
+      responses:
+        '201':
+          description: Lição aprendida criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicaoAprendida'
+        '500':
+          description: Erro ao criar lição aprendida
+    get:
+      summary: Listar todas as lições aprendidas
+      operationId: listarLicoes
+      responses:
+        '200':
+          description: Lista de lições aprendidas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LicaoAprendida'
+        '500':
+          description: Erro ao listar lições aprendidas
+
+  /licoes-aprendidas/{id}:
+    put:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Atualizar uma lição aprendida por ID
+      operationId: atualizarLicao
+      requestBody:
+        description: Dados atualizados da lição aprendida
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicaoAprendida'
+      responses:
+        '200':
+          description: Lição aprendida atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicaoAprendida'
+        '404':
+          description: Lição aprendida não encontrada
+        '500':
+          description: Erro ao atualizar lição aprendida
+    delete:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Deletar uma lição aprendida por ID
+      operationId: deletarLicao
+      responses:
+        '200':
+          description: Lição aprendida deletada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Lição aprendida não encontrada
+        '500':
+          description: Erro ao deletar lição aprendida
+
+  /logs:
+    get:
+      summary: Listar todos os logs com paginação
+      operationId: listarLogs
+      parameters:
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Número da página
+        - name: registros_por_pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Número de registros por página
+      responses:
+        '200':
+          description: Lista de logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Log'
+                  totalLogs:
+                    type: integer
+                  pagina:
+                    type: integer
+                  registros_por_pagina:
+                    type: integer
+                  totalPaginas:
+                    type: integer
+        '500':
+          description: Erro ao listar logs
+
+  /logs/limpar-todos:
+    delete:
+      summary: Limpar todos os logs
+      operationId: limparLogs
+      responses:
+        '200':
+          description: Todos os logs foram removidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Erro ao limpar logs
+
+  /oportunidades:
+    get:
+      summary: Listar oportunidades
+      operationId: listarOportunidades
+      parameters:
+        - name: base_omie
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID da base Omie
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Número da página
+        - name: registros_por_pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Número de registros por página
+        - name: atualizar_cache
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Atualizar o cache
+      security:
+        - BaseOmieIdHeader: []
+      responses:
+        '200':
+          description: Lista de oportunidades
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OportunidadesResponse'
+        '400':
+          description: ID da base Omie não fornecido no header
+        '404':
+          description: Base Omie não encontrada para o ID fornecido
+        '500':
+          description: Erro ao listar oportunidades
+
+  /usuarios:
+    post:
+      summary: Criar um novo usuário
+      operationId: criarUsuario
+      requestBody:
+        description: Dados do novo usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '500':
+          description: Erro ao criar usuário
+
+    get:
+      summary: Listar todos os usuários
+      operationId: listarUsuarios
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+        '500':
+          description: Erro ao listar usuários
+
+  /usuarios/{id}:
+    put:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Atualizar um usuário por ID
+      operationId: atualizarUsuario
+      requestBody:
+        description: Dados atualizados do usuário
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+      responses:
+        '200':
+          description: Usuário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro ao atualizar usuário
+    delete:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      summary: Deletar um usuário por ID
+      operationId: deletarUsuario
+      responses:
+        '200':
+          description: Usuário deletado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro ao deletar usuário

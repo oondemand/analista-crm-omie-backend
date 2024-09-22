@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: analista-crm-omie-backend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: analista-crm-omie-backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 4000

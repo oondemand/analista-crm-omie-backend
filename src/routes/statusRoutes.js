@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   };
 
   res.status(200).json({
-    message: 'Serviço está funcionando',
+    message: 'Serviço está funcionando - vs 0.0.7',
     database: status[dbState] || 'Status desconhecido',
   });
 });
